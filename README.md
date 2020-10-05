@@ -47,7 +47,7 @@ _The output files obtained with this procedure should be placed in the following
 
 ### Reference annotation
 
-Processing of the Gencode v27 reference annotaion and generation of the R objects used in this analysis have been performed with [R_Gencode_Reference](https://github.com/fagostini/R_Gencode_Reference).
+Parsing of the Gencode v27 reference annotaion and generation of the R objects used in this analysis have been performed with the [R_Gencode_Reference](https://github.com/fagostini/R_Gencode_Reference) processing scripts.
 
 _The R objects obtained with this procedure should be placed in the GencodeReference folder (default); otherwise, change the annotationFolder path using their location on the current machine._
 
