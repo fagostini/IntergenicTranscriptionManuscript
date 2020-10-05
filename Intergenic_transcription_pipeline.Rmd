@@ -913,14 +913,14 @@ probs <- c(0, 0.25, 0.5, 0.75, 1)
 quantiles <- quantile(log10(dt$Distance), prob=probs)
 df$quant <- factor(findInterval(df$x,quantiles))
 figureS2c = ggplot(df, aes(x,y)) +
-   ggtitle("Independent TU distance to neatest annotated feature") +
+   ggtitle("Independent TU distance to nearest annotated feature") +
    geom_line() +
    geom_ribbon(aes(ymin=0, ymax=y, fill=quant)) +
    scale_x_continuous("Distance (bp)", breaks=quantiles, labels=round(10^quantiles, 1)) +
    scale_y_continuous("Density") +
    scale_fill_brewer(guide="none") +
    geom_text(data=as.data.table(quantiles, keep.rownames="label"), aes(x=round(quantiles, 1), y=-0.02, label=label), size=3) +
-   theme_light() + theme(axis.text=element_text(size=12), axis.title=element_text(size=14))
+   theme_bw() + theme(axis.text=element_text(size=12), axis.title=element_text(size=14), strip.text=element_text(size=14), strip.background=element_rect(fill = NA, colour = NA))
 save_and_plot(x=figureS2c, bname="Figures_and_Tables/FigureS2C", width=8, height=6)
 
 # gg = ggplot(dt, aes(x=Distance, fill=Feature)) +
@@ -1006,66 +1006,56 @@ if( REBUILD ){
    names(counts) = names(files.bam)
    
    saveRDS(counts, file="Count_of_spliced_reads_on_intergenic_and_lncRNA.rds")
+   
+   pc = new.anno.genes[new.anno.genes$Subset%in%c("protein_coding", "UpstreamOfGene", "LinkerOfGene", "DownstreamOfGene")]
+   
+   counts = lapply(files.bam,
+                   function(x){
+                      print(x); flush(stdout())
+                      if(as.character(x)%like%"_SE"){
+                         param = ScanBamParam(flag=scanBamFlag(isProperPair=FALSE,
+                                                               isDuplicate=FALSE,
+                                                               isSecondaryAlignment=FALSE),
+                                              mapqFilter=255)             
+                         reads = readGAlignments(file=x, param=param)
+                      }else{
+                         param = ScanBamParam(flag=scanBamFlag(isProperPair=TRUE,
+                                                               isDuplicate=FALSE,
+                                                               isSecondaryAlignment=FALSE),
+                                              mapqFilter=255)             
+                         reads = readGAlignmentPairs(file=x, strandMode=1, param=param)
+                      }
+                      reads = invertStrand(keepSeqlevels(reads, chromosomes, pruning.mode="coarse"))
+                      overlaps = as.data.table(findOverlaps(pc, reads))
+                      overlaps = overlaps[order(queryHits),][!duplicated(subjectHits),]
+                      overlaps = overlaps[, .N, by="queryHits"]
+                      dt = with(pc[overlaps[, queryHits],], data.table(gene_id, Subset, Count=overlaps[, N], Total=length(reads)))
+                      return(dt)
+                   })
+   names(counts) = names(files.bam)
+   
+   saveRDS(counts, file="Count_of_spliced_reads_on_intergenic_and_protein-coding.rds")
+
 }
 ```
 
 ```{r plotSplicing}
-counts = readRDS("Count_of_spliced_reads_on_intergenic_and_lncRNA.rds")
+counts = c(readRDS("Count_of_spliced_reads_on_intergenic_and_protein-coding.rds"), readRDS("Count_of_spliced_reads_on_intergenic_and_lncRNA.rds"))
 
 tab = rbindlist(lapply(counts, function(x) x[, .(sum(Count)/mean(Total)), by="Subset"]))
-tab[Subset=="long_ncRNA", Subset := "Long ncRNA"]
-tab[Subset=="newTranscriptionalUnit", Subset := "Independent TU"]
-tab[, Subset := factor(Subset, levels=c("Long ncRNA", "Independent TU"))]
+tab[Subset=="protein_coding", Subset := "Protein coding"][Subset=="UpstreamOfGene", Subset := "Upstream of gene"][Subset=="LinkerOfGene", Subset := "Linker of genes"]
+tab[Subset=="long_ncRNA", Subset := "Long ncRNA"][Subset=="DownstreamOfGene", Subset := "Downstream of gene"][Subset=="newTranscriptionalUnit", Subset := "Independent TU"]
+tab[, Subset := factor(Subset, levels=c("Protein coding", "Long ncRNA", "Upstream of gene", "Linker of genes", "Downstream of gene", "Independent TU"))]
 figureS2d = ggplot(tab, aes(x=Subset, y=V1)) +
    ggtitle("Distribution of spliced reads per RNA-seq dataset") +
    geom_boxplot() + geom_jitter(pch=21, colour="black", fill="grey", width = 0.2) +
    scale_x_discrete("") +
    scale_y_continuous("Fraction of spliced reads", labels=percent) +
-   theme_light() + theme(axis.text=element_text(size=12), axis.title=element_text(size=14))
+   theme_bw() + theme(legend.position=c(0.9, 0.1), axis.text = element_text(angle=30, hjust=1, size=12), axis.title=element_text(size=14), strip.text=element_text(size=14), strip.background=element_rect(fill = NA, colour = NA))
 save_and_plot(x=figureS2d, bname="Figures_and_Tables/FigureS2D", width=8, height=6)
-
-tab = rbindlist(counts, idcol="Sample")[, list(mean(Count), median(Count), .N), by=c("Sample", "Subset")]
-gg1 = ggplot(tab, aes(x=Subset, y=log2(V1))) +
-   ggtitle("Distribution of spliced reads") +
-   geom_boxplot() +
-   scale_x_discrete("") + scale_y_continuous("Average count per dataset (log2)") +
-   theme_light()
-gg2 = ggplot(tab, aes(x=Subset, y=V2)) +
-   ggtitle("") +
-   geom_boxplot() +
-   scale_x_discrete("") + scale_y_continuous("Median count per dataset") +
-   theme_light()
-gg3 = ggplot(tab, aes(x=Subset, y=N)) +
-   ggtitle("") +
-   geom_boxplot() +
-   scale_x_discrete("") + scale_y_continuous("Transcript count per dataset") +
-   theme_light()
-save_and_plot(x=ggarrange(gg1, gg2, gg3, ncol=3), bname="Figures_and_Tables/Splicing_check", width=8, height=8)
-
-tab = rbindlist(counts, idcol="Sample")[Count>1, list(mean(Count), median(Count), .N), by=c("Sample", "Subset")]
-gg1 = ggplot(tab, aes(x=Subset, y=log2(V1))) +
-   ggtitle("Distribution of spliced reads", subtitle="Transcripts with more than 1 read") +
-   geom_boxplot() +
-   scale_x_discrete("") + scale_y_continuous("Average count per dataset (log2)") +
-   theme_light()
-gg2 = ggplot(tab, aes(x=Subset, y=V2)) +
-   ggtitle("", subtitle="") +
-   geom_boxplot() +
-   scale_x_discrete("") + scale_y_continuous("Median count per dataset") +
-   theme_light()
-gg3 = ggplot(tab, aes(x=Subset, y=N)) +
-   ggtitle("", subtitle="") +
-   geom_boxplot() +
-   scale_x_discrete("") + scale_y_continuous("Transcript count per dataset") +
-   theme_light()
-save_and_plot(x=ggarrange(gg1, gg2, gg3, ncol=3), bname="Figures_and_Tables/Splicing_check_gt_1", width=8, height=8)
 ```
 
 ![](./Figures_and_Tables/figureS2d.png)
-
-![](./Figures_and_Tables/Splicing_check.png)
-
-![](./Figures_and_Tables/Splicing_check_gt_1.png)
 
 ```{r biodallianceTrack, eval=FALSE}
 if( REBUILD ){
@@ -1912,17 +1902,17 @@ figureS2a = ggplot(tab[New_ex>0 & Old_ex>0], aes(x=log2(Old_ex), y=log2(New_ex),
    guides(fill=FALSE)
 save_plot(figureS2a + coord_fixed(), filename="Figures_and_Tables/Figure_S2A.png", base_height = 5, base_aspect_ratio=2)
 
-figureS2 = ggarrange(ggarrange(figureS2c, figureS2d, ncol=2, nrow=1, widths=c(3/5, 2/5), align="h", labels=c("A", "B")),
+figureS1 = ggarrange(ggarrange(figureS2c, figureS2d, ncol=2, nrow=1, widths=c(3/5, 2/5), align="h", labels=c("A", "B")),
                      ggarrange(figureS2b, figureS2a, ncol=2, nrow=1, widths=c(2/5, 3/5), align="h", labels=c("C", "D")),
                      ncol=1, nrow=2)
-save_and_plot(x=figureS2, bname="Figures_and_Tables/Figure_S2", width=14, height=12)
+save_and_plot(x=figureS1, bname="Figures_and_Tables/Figure_S1", width=14, height=12)
 ```
 
 ![](./Figures_and_Tables/Figure_S2B.png)
 
 ![](./Figures_and_Tables/Figure_S2A.png)
 
-![](./Figures_and_Tables/Figure_S2.png)
+![](./Figures_and_Tables/Figure_S1.png)
 
 ```{r createExpressedSetHeLa}
 sel.expressed = ncounts_nuc[Set%in%"Nuclear" & grepl("ENSG", gene_id),][tpm>=min.expr, gene_id]
