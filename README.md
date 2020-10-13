@@ -67,7 +67,7 @@ The main code is in R markdown format (Rmd), which can be opened and executed vi
 
 2. [Gencode v27 + Intergenic TUs (HeLa)](Gencode27_and_Intergenic_TUs_HeLa.bed) 
    - Download Genomic Track (<a href="https://github.com/fagostini/IntergenicTranscriptionManuscript/raw/master/GenomeBrowser/Gencode27_and_Intergenic_TUs_HeLa.bed">Bed</a> or <a href="https://github.com/fagostini/IntergenicTranscriptionManuscript/raw/master/GenomeBrowser/Gencode27_and_Intergenic_TUs_HeLa.bb">BigBed</a>) 
-    - [View in UCSC Genome Browser](http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr1:1058728-1071581&hgct_customText=track%20type=bigBed%20name=%22Gencode27%20and%20Intergenic%20TUs%20(all)%22%20description=%22Gencode%20version%2027%20and%20Intergenic%20TUs%20(all)%22%20visibility=full%20itemRgb=%22On%22bigDataUrl=https://github.com/fagostini/IntergenicTranscriptionManuscript/raw/master/GenomeBrowser/Gencode27_and_Intergenic_TUs_HeLa.bb) -->
+    - [View in UCSC Genome Browser](http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&position=chr1:1058728-1071581&hgct_customText=track%20type=bigBed%20name=%22Gencode27%20and%20Intergenic%20TUs%20(all)%22%20description=%22Gencode%20version%2027%20and%20Intergenic%20TUs%20(all)%22%20visibility=full%20itemRgb=%22On%22bigDataUrl=https://github.com/fagostini/IntergenicTranscriptionManuscript/raw/master/GenomeBrowser/Gencode27_and_Intergenic_TUs_HeLa.bb)
 
 ### TUs selected for metaprofile analysis
 
