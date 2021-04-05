@@ -1,4 +1,4 @@
-# Intergenic Transcription Manuscript
+# Intergenic Transcription
 
 Repository of the code to reproduce analysis and figures for ["Intergenic RNA mainly derives from nascent transcripts of known genes". bioRxiv, 2020](https://www.biorxiv.org/content/10.1101/2020.01.08.898478v1).
 
